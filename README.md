@@ -1,4 +1,12 @@
-# ClassInformer for IDA 7.0
+# ClassInformer Extended by lfrazer
+
+ClassInformer with extended features to rename all vtable functions discovered by the plugin in IDA (works in x86 and x86-64), I discovered a partially implemented feature to do this in the code and I got it partially working.  Be warned, this may overwrite your work if you have already named many functions in IDA manually!
+
+Forked from original 7.0 backport by ecx86: https://github.com/ecx86/classinformer-ida7  original code by sirmabus.
+
+# Original Notes from ecx86 below:
+------------------------------------
+# ClassInformer for IDA 7.0 
 
 Originally by sirmabus, ported to IDA 7.0. For IDA 7.1, the orignal author has released an [official build](https://sourceforge.net/projects/classinformer/). Unforunately for those of us who are too broke to afford it we need 7.0 :P
 
