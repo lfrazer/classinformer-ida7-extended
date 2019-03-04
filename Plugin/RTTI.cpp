@@ -1370,7 +1370,12 @@ void RTTI::processVftable(ea_t vft, ea_t col)
             if (!hasAnteriorComment(cmtPtr))
 				add_extra_line(cmtPtr, true, "\n; %s %s", ((colName[3] == 'V') ? "class" : "struct"), cmt.c_str()); // add_long_cmt
 
-            //vftable::processMembers(plainName, vft, end);
+
+			// lfrazer: Find end of vtable and plain name
+			// I think plain name should just be the name of the vtable here
+			char plainName[MAXSTR];
+			getPlainTypeName(list[0].m_name, plainName);  // hopefully correct
+            vftable::processMembers(plainName, vft, vi.end);
         }
     }
     else

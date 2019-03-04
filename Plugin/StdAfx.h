@@ -93,6 +93,24 @@ inline ea_t getEa(ea_t ea)
     #endif
 }
 
+// lfraser:  Get verify with correct arch type - like getVerify32_t but works if in EA64
+template <class T> BOOL getVerifyEA_t(ea_t eaPtr, T &rValue)
+{
+	// Location valid?
+	if (is_loaded(eaPtr))
+	{
+#ifndef __EA64__
+		// Get 32bit value
+		rValue = (T)get_32bit(eaPtr);
+#else
+		rValue = (T)get_64bit(eaPtr);
+#endif
+		return(TRUE);
+	}
+
+	return(FALSE);
+}
+
 
 // Returns TRUE if ea_t sized value flags
 inline BOOL isEa(flags_t f)

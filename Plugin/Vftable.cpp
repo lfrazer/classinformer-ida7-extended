@@ -105,7 +105,7 @@ BOOL vftable::getTableInfo(ea_t ea, vtinfo &info)
 
 
 // Get relative jump target address
-/*
+// TODO: fix for x64, this is almost certainly 32bit specific (lfrazer)
 static ea_t getRelJmpTarget(ea_t eaAddress)
 {
 	BYTE bt = get_byte(eaAddress);
@@ -129,18 +129,18 @@ static ea_t getRelJmpTarget(ea_t eaAddress)
 	else
 		return(BADADDR);
 }
-*/
 
-/*
+
+
 #define SN_constructor 1
 #define SN_destructor  2
 #define SN_vdestructor 3
 #define SN_scalardtr   4
 #define SN_vectordtr   5
-*/
+
 
 // Try to identify and place known class member types
-/*
+
 int vftable::tryKnownMember(LPCTSTR name, ea_t eaMember)
 {
 	int iType = 0;
@@ -150,34 +150,42 @@ int vftable::tryKnownMember(LPCTSTR name, ea_t eaMember)
 	if(eaMember && (eaMember != BADADDR))
 	{
 		// Skip if it already has a name
-		flags_t flags = getFlags((ea_t) eaMember);
+		flags_t flags = get_flags((ea_t) eaMember);
 		if(!has_name(flags) || has_dummy_name(flags))
 		{
 			// Should be code
-			if(isCode(flags))
+			if(is_code(flags))
 			{
 				ea_t eaAddress = eaMember;
 
 				// E9 xx xx xx xx   jmp   xxxxxxx
 				BYTE Byte = get_byte(eaAddress);
-				if((Byte == 0xE9) ||(Byte == 0xEB))
+				if((Byte == 0xE9) ||(Byte == 0xEB))  // is this correct for x64?
 				{
 					return(tryKnownMember(name, getRelJmpTarget(eaAddress)));
 				}
+				
+				//else if(IsPattern(eaAddress, " "))
 				else
-				if(IsPattern(eaAddress, " "))
 				{
+					char newFuncName[MAXSTR];
 
+					//msg(EAFORMAT " Should set name of function? (Class=%s)\n", eaMember, name);
+
+					qstring oldFuncName = get_name(eaAddress);
+					_snprintf(newFuncName, MAXSTR, "%s_vf_%s", name, oldFuncName.c_str());
+
+					set_name(eaAddress, newFuncName, (SN_NON_AUTO | SN_NOWARN | SN_NOCHECK));
 				}
 			}
 			else
-				msg(" "EAFORMAT" ** Not code at this member! **\n", eaMember);
+				msg(" " EAFORMAT " ** Not code at this member! **\n", eaMember);
 		}
 	}
 
 	return(iType);
 }
-*/
+
 
 /*
 TODO: On hold for now.
@@ -187,7 +195,7 @@ Is it helpful vs the problems of naming member functions?
 
 
 // Process vftable member functions
-/*
+
 // TODO: Just try the fix missing function code
 void vftable::processMembers(LPCTSTR lpszName, ea_t eaStart, ea_t eaEnd)
 {
@@ -198,21 +206,25 @@ void vftable::processMembers(LPCTSTR lpszName, ea_t eaStart, ea_t eaEnd)
 	while(eaAddress < eaEnd)
 	{
 		ea_t eaMember;
-		if(GetVerify32_t(eaAddress, eaMember))
+		if(getVerifyEA_t(eaAddress, eaMember))
 		{
 			// Missing/bad code?
 			if(!get_func(eaMember))
 			{
-				//msg(" "EAFORMAT" ** No member function here! **\n", eaMember);
+				msg(" " EAFORMAT " ** No member function here! **\n", eaMember);
                 fixFunction(eaMember);
 			}
 
 			tryKnownMember(lpszName, eaMember);
 		}
 		else
-			msg(" "EAFORMAT" ** Failed to read member pointer! **\n", eaAddress);
+			msg(" " EAFORMAT " ** Failed to read member pointer! **\n", eaAddress);
 
+		// lfrazer: increment by 4 probably for 32bit.. in x64 we have 8 byte ptrs
+#ifdef __EA64__
+		eaAddress += 8;
+#else
 		eaAddress += 4;
+#endif
 	};
 }
-*/

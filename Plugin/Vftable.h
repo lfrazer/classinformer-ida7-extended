@@ -22,5 +22,6 @@ namespace vftable
 	inline BOOL isValid(LPCSTR name){ return(*((PDWORD) name) == 0x375F3F3F /*"??_7"*/); }
 
 	// Identify and name common member functions
-	//void processMembers(LPCTSTR name, ea_t eaStart, ea_t eaEnd);
+	void processMembers(LPCTSTR name, ea_t eaStart, ea_t eaEnd);
+	int tryKnownMember(LPCTSTR name, ea_t eaMember);
 }
