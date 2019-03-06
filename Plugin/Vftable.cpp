@@ -151,7 +151,9 @@ int vftable::tryKnownMember(LPCTSTR name, ea_t eaMember)
 	{
 		// Skip if it already has a name
 		flags_t flags = get_flags((ea_t) eaMember);
-		if(!has_name(flags) || has_dummy_name(flags))
+		
+		// who cares if its named already, maybe we want to append multiple class prefixes?
+		//if(!has_name(flags) || has_dummy_name(flags))
 		{
 			// Should be code
 			if(is_code(flags))
@@ -159,7 +161,13 @@ int vftable::tryKnownMember(LPCTSTR name, ea_t eaMember)
 				ea_t eaAddress = eaMember;
 
 				// E9 xx xx xx xx   jmp   xxxxxxx
-				BYTE Byte = get_byte(eaAddress);
+
+				// look-ahead bytes for debugging
+				const ssize_t numLookaheadBytes = 32;
+				unsigned char lookaheadBytes[numLookaheadBytes];
+				get_bytes(lookaheadBytes, numLookaheadBytes, eaAddress);
+				BYTE Byte = lookaheadBytes[0];
+
 				if((Byte == 0xE9) ||(Byte == 0xEB))  // is this correct for x64?
 				{
 					return(tryKnownMember(name, getRelJmpTarget(eaAddress)));
@@ -168,14 +176,19 @@ int vftable::tryKnownMember(LPCTSTR name, ea_t eaMember)
 				//else if(IsPattern(eaAddress, " "))
 				else
 				{
-					char newFuncName[MAXSTR];
-
-					//msg(EAFORMAT " Should set name of function? (Class=%s)\n", eaMember, name);
 
 					qstring oldFuncName = get_name(eaAddress);
-					_snprintf(newFuncName, MAXSTR, "%s_vf_%s", name, oldFuncName.c_str());
 
-					set_name(eaAddress, newFuncName, (SN_NON_AUTO | SN_NOWARN | SN_NOCHECK));
+					if (strstr(oldFuncName.c_str(), name) == NULL) // add name prefix if it is not already in the name string
+					{
+						char newFuncName[MAXSTR];
+
+						//msg(EAFORMAT " Should set name of function? (Class=%s)\n", eaMember, name);
+
+						_snprintf(newFuncName, MAXSTR, "%s_vf_%s", name, oldFuncName.c_str());
+
+						set_name(eaAddress, newFuncName, (SN_NON_AUTO | SN_NOWARN | SN_NOCHECK));
+					}
 				}
 			}
 			else
