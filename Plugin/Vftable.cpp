@@ -240,4 +240,63 @@ void vftable::processMembers(LPCTSTR lpszName, ea_t eaStart, ea_t eaEnd)
 		eaAddress += 4;
 #endif
 	};
+
+	// lfrazer: Find constructors?
+	// is vtbl start address at eaStart or eaStart - 1?
+	qstring vtblName = get_name(eaStart);
+	//msg("Getting xrefs for " EAFORMAT " (%s) to find CTORS\n", eaStart, vtblName.c_str());
+
+	xrefblk_t vtblXrefs;
+	bool success = xrefblk_t_first_to(&vtblXrefs, eaStart, XREF_FAR);
+
+	while (success)
+	{
+		//msg(EAFORMAT " address of vtbl xref (code inside constructor?)\n", vtblXrefs.from);  // if we ask for "to" xrefs, the useful info is in "from" field
+		
+		flags_t currflags = get_flags(vtblXrefs.from);
+		if (is_code(currflags))
+		{
+			func_t* ctorFunc = get_func(vtblXrefs.from);
+			
+			if (ctorFunc)
+			{
+				qstring fname = get_name(ctorFunc->start_ea);
+				//msg(EAFORMAT " address of suspected CTOR %s()\n", ctorFunc->start_ea, fname.c_str());
+
+				flags_t funcflags = get_flags(ctorFunc->start_ea);
+
+				// rename the CTOR if it doesn't have a name yet
+				if (!has_name(funcflags) || has_dummy_name(funcflags))
+				{
+					char newFuncName[MAXSTR];
+					_snprintf(newFuncName, MAXSTR, "%s_CTOR", lpszName);
+
+					set_name(ctorFunc->start_ea, newFuncName, (SN_NON_AUTO | SN_NOWARN | SN_NOCHECK));
+					
+					// add comment about original func name
+					char commentOrigName[MAXSTR];
+					_snprintf(commentOrigName, MAXSTR, "orig funcname: %s", fname.c_str());
+					set_cmt(ctorFunc->start_ea, commentOrigName, false);
+				}
+				else
+				{
+					//msg(EAFORMAT " address of suspected CTOR for %s but already has a name: %s\n", ctorFunc->start_ea, lpszName, fname.c_str());
+
+					// In this case we should still rename it (IF it was named by us), since many constructors will reference vtbls of sub classes too, but they are processed later on in data section
+
+					if (strstr(fname.c_str(), "_CTOR") != NULL)
+					{
+						char newFuncName[MAXSTR];
+						_snprintf(newFuncName, MAXSTR, "%s_CTOR", lpszName);
+
+						set_name(ctorFunc->start_ea, newFuncName, (SN_NON_AUTO | SN_NOWARN | SN_NOCHECK));
+					}
+				}
+				
+			}
+		}
+
+		success = xrefblk_t_next_to(&vtblXrefs);
+	}
+
 }
