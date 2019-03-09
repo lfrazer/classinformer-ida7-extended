@@ -152,48 +152,60 @@ int vftable::tryKnownMember(LPCTSTR name, ea_t eaMember)
 		// Skip if it already has a name
 		flags_t flags = get_flags((ea_t) eaMember);
 		
-		// who cares if its named already, maybe we want to append multiple class prefixes?
-		//if(!has_name(flags) || has_dummy_name(flags))
+		// Should be code
+		if (is_code(flags))
 		{
-			// Should be code
-			if(is_code(flags))
+			ea_t eaAddress = eaMember;
+
+			// E9 xx xx xx xx   jmp   xxxxxxx
+
+			// look-ahead bytes for debugging
+			const ssize_t numLookaheadBytes = 32;
+			unsigned char lookaheadBytes[numLookaheadBytes];
+			get_bytes(lookaheadBytes, numLookaheadBytes, eaAddress);
+			BYTE Byte = lookaheadBytes[0];
+
+			if ((Byte == 0xE9) || (Byte == 0xEB))  // is this correct for x64?
 			{
-				ea_t eaAddress = eaMember;
+				return(tryKnownMember(name, getRelJmpTarget(eaAddress)));
+			}
+			else
+			{
 
-				// E9 xx xx xx xx   jmp   xxxxxxx
+				qstring oldFuncName = get_name(eaAddress);
+				char funcComment[MAXSTR];
 
-				// look-ahead bytes for debugging
-				const ssize_t numLookaheadBytes = 32;
-				unsigned char lookaheadBytes[numLookaheadBytes];
-				get_bytes(lookaheadBytes, numLookaheadBytes, eaAddress);
-				BYTE Byte = lookaheadBytes[0];
-
-				if((Byte == 0xE9) ||(Byte == 0xEB))  // is this correct for x64?
+				if (!has_name(flags) || has_dummy_name(flags)) // only add prefix name once
 				{
-					return(tryKnownMember(name, getRelJmpTarget(eaAddress)));
+					char newFuncName[MAXSTR];
+
+					//msg(EAFORMAT " Should set name of function? (Class=%s)\n", eaMember, name);
+
+					_snprintf(newFuncName, MAXSTR, "%s_vf_%s", name, oldFuncName.c_str());
+
+					set_name(eaAddress, newFuncName, (SN_NON_AUTO | SN_NOWARN | SN_NOCHECK));
+
+					_snprintf(funcComment, MAXSTR, "Related Vclasses: %s, ", name);
+					set_cmt(eaAddress, funcComment, true);
 				}
-				
-				//else if(IsPattern(eaAddress, " "))
 				else
 				{
 
-					qstring oldFuncName = get_name(eaAddress);
+					// instead of making super long names to reflect every Vtbl that touched this func, we will add a comment
+					qstring existingComment;
+					get_cmt(&existingComment, eaAddress, true);
+					_snprintf(funcComment, MAXSTR, "%s%s, ", existingComment.c_str(), name);
+					set_cmt(eaAddress, funcComment, true);
 
-					if (strstr(oldFuncName.c_str(), name) == NULL) // add name prefix if it is not already in the name string
-					{
-						char newFuncName[MAXSTR];
-
-						//msg(EAFORMAT " Should set name of function? (Class=%s)\n", eaMember, name);
-
-						_snprintf(newFuncName, MAXSTR, "%s_vf_%s", name, oldFuncName.c_str());
-
-						set_name(eaAddress, newFuncName, (SN_NON_AUTO | SN_NOWARN | SN_NOCHECK));
-					}
+					// is append_cmt broken?
+					// append_cmt(eaAddress, funcComment, true);
 				}
+
 			}
-			else
-				msg(" " EAFORMAT " ** Not code at this member! **\n", eaMember);
 		}
+		else
+			msg(" " EAFORMAT " ** Not code at this member! **\n", eaMember);
+		
 	}
 
 	return(iType);
@@ -276,7 +288,7 @@ void vftable::processMembers(LPCTSTR lpszName, ea_t eaStart, ea_t eaEnd)
 					// add comment about original func name
 					char commentOrigName[MAXSTR];
 					_snprintf(commentOrigName, MAXSTR, "orig funcname: %s", fname.c_str());
-					set_cmt(ctorFunc->start_ea, commentOrigName, false);
+					set_cmt(ctorFunc->start_ea, commentOrigName, true);
 				}
 				else
 				{

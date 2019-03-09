@@ -149,7 +149,7 @@ static void sanitizeIdaName(__out LPSTR out, __in LPCSTR name, int n)
 // Attempt to serialize a managed name until it succeeds
 static BOOL serializeName(ea_t ea, __in LPCSTR name)
 {
-	char sanitized[MAXSTR]; sanitized[SIZESTR(sanitized)] = 0;
+	char sanitized[MAXSTR] = { 0 };
 	sanitizeIdaName(sanitized, name, SIZESTR(sanitized));
 	if (strlen(sanitized) > MAXSTR - 10)
 		sanitized[MAXSTR - 10] = '\0';
