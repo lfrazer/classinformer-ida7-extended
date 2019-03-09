@@ -370,7 +370,7 @@ void CORE_Process(int arg)
     {		
         char version[16];
         sprintf(version, "%u.%u", HIBYTE(MY_VERSION), LOBYTE(MY_VERSION));
-        msg("\n>> Class Informer: v: %s, built: %s, By Sirmabus\n", version, __DATE__);
+        msg("\n>> Class Informer: v: %s, built: %s, By Sirmabus (Extended by lfrazer)\n", version, __DATE__);
         refreshUI();
 
 		if (!initResourcesOnce)
