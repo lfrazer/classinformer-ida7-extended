@@ -221,7 +221,7 @@
    </property>
    <property name="text">
     <string>Version: 2.4
-By Sirmabus</string>
+By Sirmabus (Extended by lfrazer)</string>
    </property>
    <property name="textFormat">
     <enum>Qt::PlainText</enum>
